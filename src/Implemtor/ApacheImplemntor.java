@@ -73,8 +73,10 @@ public class ApacheImplemntor extends Implementor {
 	
 
 	@Override
-	public Certificate genrateKeyPair(String dName,String allias) throws ImplementorExcption{
-		CertificateFactory cf;
+	public Certificate genrateKeyPair(String dName,String alias) throws ImplementorExcption{
+		return this.genartePrivatekey(alias, dName); 
+		
+		/*CertificateFactory cf;
 		
 		try {
 			cf=CertificateFactory.getInstance("X.509");
@@ -100,7 +102,7 @@ public class ApacheImplemntor extends Implementor {
 		
 		
 		return cert; 
-		
+		*/
 		
 	   		
 	}
