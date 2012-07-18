@@ -1,0 +1,6 @@
+{
+	"caCertFilePath":"C:\temp\keyStore\a\a.crt",
+    "serverCertFilePath":"C:\temp\keyStore\a\a.crt",   
+    "serverKeyFilePath":"C:\temp\keyStore\a\a.key",  
+	"serverCrlFilePath":"C:\temp\keyStore\a\a.crl"
+ }

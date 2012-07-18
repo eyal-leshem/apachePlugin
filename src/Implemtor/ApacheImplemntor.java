@@ -51,6 +51,8 @@ import javax.crypto.SecretKey;
 public class ApacheImplemntor extends Implementor
 {
 	
+
+	
 	//apache file of trusted certificate  
 	String caCertFilePath; 
 	String serverCertFilePath; 
@@ -71,10 +73,17 @@ public class ApacheImplemntor extends Implementor
 	public final String defaultKpa = "RSA"; 
 	public final String defaultProvider = "BC"; 
 	
-	
+	public static void main(String[] args) {
+		try {
+			ApacheImplemntor apacheImplemntor=new ApacheImplemntor("aaa");
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+	}
 
     
-    
+
     public ApacheImplemntor(String params) throws  Exception 
     {   
 		
@@ -86,11 +95,12 @@ public class ApacheImplemntor extends Implementor
 		 *	 "serverKeyFilePath":"the file of the certificate of the server"
 		 *	}  
 		 */		
-    	JSONObject json  =  new JSONObject(); 
+    	JSONObject json  =  new JSONObject(params); 
     	caCertFilePath  =  json.getString("caCertFilePath");
     	serverCertFilePath  =  json.getString("serverCertFilePath"); 
     	serverKeyFilePath  =  json.getString("serverKeyFilePath");  
-    	serverCRLFilePath  =  json.getString("serverKeyFilePath");
+    	serverCRLFilePath  =  json.getString("serverCrlFilePath");
+    	name="apache"; 
 	}
 	
 	

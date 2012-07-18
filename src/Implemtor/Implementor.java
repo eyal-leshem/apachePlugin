@@ -3,6 +3,7 @@ package Implemtor;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.cert.Certificate;
+import java.util.ArrayList;
 
 import javax.crypto.SecretKey;
 
@@ -53,7 +54,11 @@ public abstract class Implementor {
 	}
 	
 	public boolean		removeCertificate(BigInteger serialNumber)  throws ImplementorExcption{
-		throw new ImplementorExcption("unimplemnt metho"); 
+		throw new ImplementorExcption("unimplemnt method"); 
+	}
+
+	public ArrayList<String> getAlgorithms() throws ImplementorExcption{
+		return new ArrayList<String>(); 
 	}
 		
 }
