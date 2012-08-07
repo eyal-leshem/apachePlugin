@@ -1,6 +1,7 @@
 package Implemtor;
 
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -18,6 +19,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
+import java.security.Security;
 import java.security.cert.CRL;
 import java.security.cert.CRLException;
 import java.security.cert.Certificate;
@@ -25,15 +27,24 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.Collection;
 import java.util.Date;
+import java.util.Enumeration;
+import java.util.List;
 
 import sun.misc.BASE64Encoder;
 import sun.security.x509.CertAndKeyGen;
-import sun.security.x509.X500Name;
+//import sun.security.x509.X500Name;
+import org.bouncycastle.openssl.PEMReader;
+import org.bouncycastle.openssl.PEMWriter;
 
-import org.bouncycastle.cert.X509v2CRLBuilder;
-//import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.DERInteger;
+import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.asn1.x509.CertificateList;
+import org.bouncycastle.asn1.x509.TBSCertList;
 import org.bouncycastle.cert.X509CRLEntryHolder;
 import org.bouncycastle.cert.X509CRLHolder;
 import org.bouncycastle.cert.X509v2CRLBuilder; 
@@ -42,7 +53,11 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.json.*; 
 
+import com.sun.corba.se.impl.oa.poa.AOMEntry;
+
 import java.security.cert.X509CRL;
+import sun.misc.BASE64Encoder;
+import sun.misc.BASE64Decoder;
 
 
 
@@ -50,8 +65,6 @@ import javax.crypto.SecretKey;
 
 public class ApacheImplemntor extends Implementor
 {
-	
-
 	
 	//apache file of trusted certificate  
 	String caCertFilePath; 
@@ -65,25 +78,45 @@ public class ApacheImplemntor extends Implementor
 	public final String startRSAkeyString = "-----BEGIN RSA PRIVATE KEY-----\r\n"; 
 	public final String endRSAkeyString = "\r\n-----END RSA PRIVATE KEY-----\r\n"; 
  
-	//public final String beginCrl = "-----BEGIN X509 CRL-----\r\n"; 
-	//public final String endCrl =  "\r\n-----END X509 CRL-----\r\n";
+	public final String beginCrl = "-----BEGIN X509 CRL-----\r\n"; 
+	public final String endCrl =  "\r\n-----END X509 CRL-----\r\n";
 	
 	//defualt alogrithems 
 	public final String defaultSig = "SHA1withRSA";
 	public final String defaultKpa = "RSA"; 
 	public final String defaultProvider = "BC"; 
 	
-	public static void main(String[] args) {
-		try {
-			ApacheImplemntor apacheImplemntor=new ApacheImplemntor("aaa");
-		} catch (Exception e) {
+	/**
+	 * main - used only to check this class  
+	 * @param args
+	 */
+	
+	public static void main(String[] args)
+	{
+		
+		//gen cert
+		//genrateKeyPair("Hadas", "keyName" );
+		/*try 
+		{
+			ApacheImplemntor imp = new ApacheImplemntor("");
+			//imp.genrateKeyPair("cn=a,ou=a,o=a,l=a,s=a,c=a", "HadasKey");
+			//add to crl
+			imp.addToCrl(new BigInteger("01"));
+			
+			
+		} 
+		catch (Exception e) 
+		{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} 
+		}*/
+		
+		
+		
 	}
 
     
-
+    
     public ApacheImplemntor(String params) throws  Exception 
     {   
 		
@@ -95,60 +128,39 @@ public class ApacheImplemntor extends Implementor
 		 *	 "serverKeyFilePath":"the file of the certificate of the server"
 		 *	}  
 		 */		
-    	JSONObject json  =  new JSONObject(params); 
+    	
+    	//get the string from the json 
+    	JSONObject json  =  new JSONObject(); 
     	caCertFilePath  =  json.getString("caCertFilePath");
     	serverCertFilePath  =  json.getString("serverCertFilePath"); 
     	serverKeyFilePath  =  json.getString("serverKeyFilePath");  
-    	serverCRLFilePath  =  json.getString("serverCrlFilePath");
-    	name="apache"; 
-		
-		
-		
+    	serverCRLFilePath  =  json.getString("serverCRLFilePath");
+    	
+    	
+ 
 	}
 	
 	
 
-	@Override
 	public Certificate genrateKeyPair(String dName,String alias) throws ImplementorExcption{
-		return this.genartePrivatekey(alias, dName); 
 		
-		/*CertificateFactory cf;
-		
-		try {
-			cf = CertificateFactory.getInstance("X.509");
-		} catch (CertificateException e) {
-			throw new ImplementorExcption("can't load certifcate factory",e);
-		}
-		
-		File apacheTrustedCertFile = new File(caCertFilePath); 
-		
-		InputStream in;
-		try {
-			in = new FileInputStream(apacheTrustedCertFile);
-		} catch (FileNotFoundException e) {
-			throw new ImplementorExcption("problem with apache ca cert file", e); 
-		} 
-		
-		Certificate cert; 
-		try {
-			cert = cf.generateCertificate(in);
-		} catch (CertificateException e) {
-			throw new ImplementorExcption("problem to genrate the certificate from file exception",e); 
-		} 
-		
-		
-		return cert; 
-		*/
-		
+		//adapter 
+		return this.genartePrivatekey(alias, dName); 	
+	
 	   		
 	}
 
 
 
-
+	/**
+	 * get certificate that apache need to trust 
+	 * and insert it into the the CaCertificatesFiles of 
+	 * apache (where is the certificate that apache trust )
+	 */
 	@Override
 	public boolean installTrustCert(Certificate cert,String alias) throws ImplementorExcption {
 
+		//encode this certifcate in vase 64 
 		BASE64Encoder base64Encoder = new BASE64Encoder(); 
 		String	      encodeCertBody;
 		try {
@@ -196,7 +208,8 @@ public class ApacheImplemntor extends Implementor
 	 * @throws MyKeyToolException
 	 * @throws MykeyToolIoException
 	 */
-	private  Certificate genartePrivatekey(String alias,String dName) throws ImplementorExcption{
+	private  Certificate genartePrivatekey(String alias,String dName) throws ImplementorExcption
+	{
 			 
 		  
 		  CertAndKeyGen keypair;
@@ -206,9 +219,9 @@ public class ApacheImplemntor extends Implementor
 				throw new ImplementorExcption("porblem while trying to create object of key pair", e); 
 		  }
 		
-		  X500Name x500Name;
+		  sun.security.x509.X500Name x500Name;
 		  try {
-			x500Name  =  new X500Name(dName);
+			x500Name  =  new sun.security.x509.X500Name(dName);
 		  } catch (IOException e) {
 			  throw new ImplementorExcption("problem to producde X500 Name",e);
 		  }
@@ -222,6 +235,7 @@ public class ApacheImplemntor extends Implementor
 		  
 		  try {
 			chain[0]  =  keypair.getSelfCertificate(x500Name, new Date(), 360*24L*60L*60L);
+			System.out.println(chain[0].getSerialNumber());
 		  } 
 		  catch (Exception e){
 		  	throw new ImplementorExcption("problem to get self certificate form keypair",e);
@@ -332,7 +346,7 @@ public class ApacheImplemntor extends Implementor
 
 
 
-	private void savePrivtaeKey(PrivateKey privKey) throws ImplementorExcption {
+	/*private void savePrivtaeKey(PrivateKey privKey) throws ImplementorExcption {
 		
 		FileWriter fw; 
 		BASE64Encoder base64Encoder = new BASE64Encoder();
@@ -381,6 +395,62 @@ public class ApacheImplemntor extends Implementor
 		//close file
 		try {fw.close();} catch (IOException ignore){}		
 				
+	}*/
+	
+private void savePrivtaeKey(PrivateKey privKey) throws ImplementorExcption {
+		
+		FileWriter fw; 
+		
+		/*
+		PKCS8EncodedKeySpec pkcs8EncodedKeySpec = new PKCS8EncodedKeySpec(privKey.getEncoded());
+		
+		BASE64Encoder base64Encoder = new BASE64Encoder();
+		
+		String encodedKey= base64Encoder.encode(pkcs8EncodedKeySpec.getEncoded());
+		*/
+		
+		File file = new File(serverKeyFilePath); 
+		
+		//save the old key for case of troubles
+		if(file.exists()){
+			
+			File old = new File(file.getName()+".old");  
+			
+			//for success of remane 
+			if(old.exists())
+				old.delete();
+			
+			file.renameTo(old); 
+		}
+		
+		//open the file to write 
+		try 
+		{					
+			fw = new FileWriter(serverKeyFilePath);		
+		} catch (IOException e) {
+			throw new ImplementorExcption("can't open the key file to writing",e); 
+		}
+		
+		//try write the key to the file 
+		try
+		{
+			PEMWriter pemWriter=new PEMWriter(fw);
+			pemWriter.writeObject(privKey);
+			pemWriter.flush();
+		}
+		
+		//can't write to the file
+		catch (IOException e) {
+			//try to restore the old key 
+			if(restoreOldKey())
+				throw new ImplementorExcption("problem to store the new key ,return to use in old key",e); 
+			//can't restore the old key 
+			throw new ImplementorExcption("problem to store the new key ,no key and cert for this server",e);
+		}
+		
+		//close file
+		try {fw.close();} catch (IOException ignore){}		
+				
 	}
 	
 	/**
@@ -413,15 +483,12 @@ public class ApacheImplemntor extends Implementor
 	 */
 	public boolean		addToCrl(BigInteger serialNumber)  throws ImplementorExcption
 	{
+		Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
 		
 		File crlFile = new File(serverCRLFilePath); 
 		X509CRLHolder crl = null;
-		
 		//generate builder for CRL
-		X509v2CRLBuilder crlGen = new X509v2CRLBuilder(new org.bouncycastle.asn1.x500.X500Name("CN=ca"), new Date());
-		
-		//add new entry
-		crlGen.addCRLEntry(serialNumber, new Date(), 0);
+		X509v2CRLBuilder crlGen = new X509v2CRLBuilder(new X500Name("CN=ca"), new Date());
 		
 		KeyPairGenerator kpGen;
 		
@@ -444,47 +511,47 @@ public class ApacheImplemntor extends Implementor
         //build the CRL and add the entries
         try 
         {
-			crl = crlGen.build(new JcaContentSignerBuilder("SHA256withRSAEncryption").setProvider("BC").build(pair.getPrivate()));
-			
-			try
+	        try 
 			{
+				//write into new file with temp name
+				BASE64Encoder base64Encoder = new BASE64Encoder(); 
+				String encodedCrl;
+		       
 				//if the file exists we have to copy the previous content into new object
 				if(crlFile.exists())
 				{
-					
-					InputStream inStream = new FileInputStream(serverCRLFilePath);
-					//read file as a byte stream
-					byte fileContent[] = new byte[(int)crlFile.length()];
-					inStream.read(fileContent);
-					inStream.close();
+					//get all the current entries
+					FileInputStream f  = new FileInputStream(new File(serverCRLFilePath)); 
+					byte[] decData = new BASE64Decoder().decodeBuffer(f);
 					
 					//initiate the CRL holder from byteStream that we read
-					X509CRLHolder crlHolder = new X509CRLHolder(fileContent);
-				
-					//copy the previous entries (PROBLEM: HERE IT HAS BE ENCODED, BUT WE HAVE A BYTE ARRAY!)
-					crlGen.addCRL(crlHolder);
+					X509CRLHolder holder = new X509CRLHolder(decData); 
 					
-					//remove the previous file (CHECK IF NEEDED)
-					crlFile.delete();
+					//copy the previous entries 
+					crlGen.addCRL(holder);
+					f.close();
 				}
 				
-				//write into the file
-				BASE64Encoder base64Encoder=new BASE64Encoder(); 
-		        String encodedCrl;
-				try 
-				{
-					encodedCrl = base64Encoder.encode(crl.getEncoded());
-					
-					FileWriter fw=new FileWriter(serverCRLFilePath);
-					
-					fw.write(encodedCrl); 
-					fw.flush(); 
-					fw.close();
-				} 
-				catch (IOException e)
-				{
-					throw new ImplementorExcption("Error while trying to write new crl file: ",e);
-				}
+				crl = crlGen.build(new JcaContentSignerBuilder("SHA256withRSAEncryption").setProvider("BC").build(pair.getPrivate()));
+				
+				//check if exists is holder
+				X509CRLEntryHolder entry = crl.getRevokedCertificate(serialNumber);
+				
+		        if (entry != null)
+		        {
+		        	throw new ImplementorExcption("The certificate is already revoked: "+ serverCRLFilePath);
+		        }
+				
+		        //add new entry
+				crlGen.addCRLEntry(serialNumber, new Date(), 0);
+				
+				crl = crlGen.build(new JcaContentSignerBuilder("SHA256withRSAEncryption").setProvider("BC").build(pair.getPrivate()));
+				encodedCrl = base64Encoder.encode(crl.getEncoded()); 
+			
+				FileWriter fw = new FileWriter(serverCRLFilePath);
+				fw.write(encodedCrl);
+				fw.flush();
+				fw.close();
 				
 			}
 			//can't write to the file
@@ -501,4 +568,8 @@ public class ApacheImplemntor extends Implementor
         
         return true;
 	}
+	
+	
+	
+	
 }
