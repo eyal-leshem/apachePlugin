@@ -101,6 +101,9 @@ public class ApacheImplemntor extends Implementor
     	serverKeyFilePath  =  json.getString("serverKeyFilePath");  
     	serverCRLFilePath  =  json.getString("serverCrlFilePath");
     	name="apache"; 
+		
+		
+		
 	}
 	
 	
