@@ -168,8 +168,11 @@ public class ApacheImplemntor extends Implementor
 		} catch (CertificateEncodingException e) {
 			throw new ImplementorExcption("cann't encode this string",e); 
 		} 
+		
+		//full certificate string 
 		String cerString = beginCertString+encodeCertBody+endCertString; 
 		
+		//add the cert to the apache certifcate ca file
 		FileWriter fw;
 		try {
 			fw = new FileWriter(new File(this.caCertFilePath),true);
@@ -189,29 +192,31 @@ public class ApacheImplemntor extends Implementor
 		}
 		
 		
-		
-		return false ; 
+		//ok 
+		return true ; 
 	}
 
 
 
 	@Override
 	public SecretKey genrateSecertKey(String alg,String alias) throws ImplementorExcption {
+		//not supported 
 		throw new ImplementorExcption("apache not support private keys"); 
 	}
 	
 	/**
 	 * Generate a pair of private key and certificate that contain the public key
-	 * @param alias
-	 * @param dName
-	 * @return the new certificate that generated
+	 * @param alias  not used here 
+	 * @param dName  the full subject form of this certificate 
+	 * 
+	 *	@return the new certificate that generated
 	 * @throws MyKeyToolException
 	 * @throws MykeyToolIoException
 	 */
 	private  Certificate genartePrivatekey(String alias,String dName) throws ImplementorExcption
 	{
 			 
-		  
+		  //get key pain object 
 		  CertAndKeyGen keypair;
 		  try {
 			 keypair  =  new CertAndKeyGen(defaultKpa,defaultSig,defaultProvider);
@@ -219,49 +224,59 @@ public class ApacheImplemntor extends Implementor
 				throw new ImplementorExcption("porblem while trying to create object of key pair", e); 
 		  }
 		
+		  //create the relvant x500 name for this certificate 
 		  sun.security.x509.X500Name x500Name;
 		  try {
 			x500Name  =  new sun.security.x509.X500Name(dName);
 		  } catch (IOException e) {
 			  throw new ImplementorExcption("problem to producde X500 Name",e);
 		  }
+		  
+		  //gnerate the key and x.509 certificate  
 		  try {
 			keypair.generate(1024);
 		  } catch (InvalidKeyException e) {
 			throw new ImplementorExcption("porblem while trying to genrate key pair", e); 
 		  }
 		  PrivateKey privKey  =  keypair.getPrivateKey();
+	
+		  //get the self sign certificate 
 		  X509Certificate[] chain  =  new X509Certificate[1];
-		  
-		  try {
+  		  try {
 			chain[0]  =  keypair.getSelfCertificate(x500Name, new Date(), 360*24L*60L*60L);
-			System.out.println(chain[0].getSerialNumber());
 		  } 
 		  catch (Exception e){
 		  	throw new ImplementorExcption("problem to get self certificate form keypair",e);
 		  }
 
+		  //save the private key 
 		  try{
 			  savePrivtaeKey(privKey); 
 		  }catch (ImplementorExcption e) {
 			 throw new ImplementorExcption("problem to store the key",e); 
 		  }
-		  
+
+		  //sate the sel certificate 
 		  try{
 			  saveSelfCert(chain[0]); 
 		  }catch (ImplementorExcption e) {
-			  throw new ImplementorExcption("poblem to save the self certifcate",e); 
-		}
+			  throw new ImplementorExcption("poblem to save the self certifcate",e);
+		  }
 		  
-		  
-		  
+		  //retrun the certificate 
 		  return chain[0]; 
 		  
 		  
 	}
 
 
-
+	/**
+	 * change the certificate file of the apache to new certifcate 
+	 * (it save the old certifcate as "certFile.crt.old")   
+	 *
+	 * @param cert  the new server certifcate to to store 
+	 * @throws ImplementorExcption when the save fail 
+	 */
 	private void saveSelfCert(X509Certificate cert) throws ImplementorExcption {
 		
 		FileWriter fw; 
@@ -324,7 +339,10 @@ public class ApacheImplemntor extends Implementor
 	}
 
 
-
+	/**
+	* in case of failure it return the certifcate file of apache 
+	* to be the old certificate 
+	*/
 	private boolean restoreOldCert() {
 		File oldKeyFile = new File(serverCertFilePath+".old"); 
 		
@@ -346,68 +364,19 @@ public class ApacheImplemntor extends Implementor
 
 
 
-	/*private void savePrivtaeKey(PrivateKey privKey) throws ImplementorExcption {
-		
-		FileWriter fw; 
-		BASE64Encoder base64Encoder = new BASE64Encoder();
-		String encodedKey = base64Encoder.encode(privKey.getEncoded()); 
-		
-		File file = new File(serverKeyFilePath); 
-		
-		//save the old key for case of troubles
-		if(file.exists()){
-			
-			File old = new File(file.getName()+".old");  
-			
-			//for success of remane 
-			if(old.exists())
-				old.delete();
-			
-			file.renameTo(old); 
-		}
-		
-		//open the file to write 
-		try 
-		{					
-			fw = new FileWriter(serverKeyFilePath);		
-		} catch (IOException e) {
-			throw new ImplementorExcption("can't open the key file to writing",e); 
-		}
-		
-		//try write the key to the file 
-		try
-		{
-			fw.write(startRSAkeyString);
-			fw.write(encodedKey); 
-			fw.write(endRSAkeyString); 
-			fw.flush();
-		}
-		
-		//can't write to the file
-		catch (IOException e) {
-			//try to restore the old key 
-			if(restoreOldKey())
-				throw new ImplementorExcption("problem to store the new key ,return to use in old key",e); 
-			//can't restore the old key 
-			throw new ImplementorExcption("problem to store the new key ,no key and cert for this server",e);
-		}
-		
-		//close file
-		try {fw.close();} catch (IOException ignore){}		
-				
-	}*/
-	
+
+	/**
+	 * save this private key to be the key file of the apache  
+	 *(store the old key file in "keyfileName.key.old")
+	 *
+	 * @param privKey the private key for saving  
+	 * @throws ImplementorExcption
+	 */
 private void savePrivtaeKey(PrivateKey privKey) throws ImplementorExcption {
 		
 		FileWriter fw; 
 		
-		/*
-		PKCS8EncodedKeySpec pkcs8EncodedKeySpec = new PKCS8EncodedKeySpec(privKey.getEncoded());
-		
-		BASE64Encoder base64Encoder = new BASE64Encoder();
-		
-		String encodedKey= base64Encoder.encode(pkcs8EncodedKeySpec.getEncoded());
-		*/
+	
 		
 		File file = new File(serverKeyFilePath); 
 		
@@ -487,6 +456,7 @@ private void savePrivtaeKey(PrivateKey privKey) throws ImplementorExcption {
 		
 		File crlFile = new File(serverCRLFilePath); 
 		X509CRLHolder crl = null;
+		
 		//generate builder for CRL
 		X509v2CRLBuilder crlGen = new X509v2CRLBuilder(new X500Name("CN=ca"), new Date());
 		
